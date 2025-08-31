@@ -25,6 +25,34 @@ async function getData() {
   console.time("[digests] supabase.select");
   let { data, error } = await supabase.from("digests").select("id,title,summary,published_at").order("published_at",{ascending:false});
   console.timeEnd("[digests] supabase.select");
+  // Direct PostgREST probe to compare with supabase-js behavior
+  try {
+    const restUrl = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/digests?select=id,title,summary,published_at&order=published_at.desc&limit=5`;
+    const restRes = await fetch(restUrl, {
+      headers: {
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+        Prefer: 'count=exact',
+      },
+      cache: 'no-store',
+    });
+    const body = await restRes.text();
+    const contentRange = restRes.headers.get('content-range') || 'n/a';
+    console.info(`[digests] REST probe status=${restRes.status} content-range=${contentRange} bytes=${body.length} sample=${body.slice(0, 200)}`);
+  } catch (e: any) {
+    console.error('[digests] REST probe failed', e?.message || e);
+  }
+  try {
+    // Explain the same query to surface RLS or filters applied by PostgREST
+    const explain = await supabase
+      .from("digests")
+      .select("id,title,summary,published_at")
+      .order("published_at", { ascending: false })
+      .explain({ format: "text", analyze: false, verbose: true, settings: true });
+    console.info(`[digests] EXPLAIN plan:\n${(explain as any)?.data ?? "<no plan>"}`);
+  } catch (e: any) {
+    console.info("[digests] EXPLAIN failed:", e?.message || e);
+  }
   if (error) {
     console.error("[digests] Supabase select error:", { code: (error as any).code, message: error.message, details: (error as any).details, hint: (error as any).hint });
     return [];
