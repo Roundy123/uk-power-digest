@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+
+
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
@@ -12,6 +15,7 @@ export default async function Page() {
   return (
     <main>
       <h2>Digests</h2>
+      data {JSON.stringify(rows)}
       <ul>
         {rows.map(r => (
           <li key={r.id}>
