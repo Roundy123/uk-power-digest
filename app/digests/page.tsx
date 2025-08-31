@@ -21,7 +21,7 @@ async function getData() {
     console.error("Supabase env missing: SUPABASE_URL/SUPABASE_ANON_KEY");
     return [];
   }
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, { db: { schema: 'public' } });
   console.time("[digests] supabase.select");
   let { data, error } = await supabase.from("digests").select("id,title,summary,published_at").order("published_at",{ascending:false});
   console.timeEnd("[digests] supabase.select");
@@ -57,8 +57,30 @@ async function getData() {
     console.error("[digests] Supabase select error:", { code: (error as any).code, message: error.message, details: (error as any).details, hint: (error as any).hint });
     return [];
   }
-  console.info(`[digests] Rows fetched: ${data?.length || 0}`);
-  return data || [];
+  let rows: any[] = data || [];
+  if (!rows || rows.length === 0) {
+    try {
+      const restUrl = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/digests?select=id,title,summary,published_at&order=published_at.desc&limit=5`;
+      const res = await fetch(restUrl, {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          Prefer: 'count=exact',
+        },
+        cache: 'no-store',
+      });
+      const restData = await res.json().catch(() => []);
+      const fallbackCount = Array.isArray(restData) ? restData.length : 0;
+      console.info(`[digests] Using REST fallback rows=${fallbackCount}`);
+      if (Array.isArray(restData)) {
+        rows = restData;
+      }
+    } catch (e: any) {
+      console.error('[digests] REST fallback failed', e?.message || e);
+    }
+  }
+  console.info(`[digests] Rows fetched: ${rows.length}`);
+  return rows;
 }
 
 export default async function Page() {
