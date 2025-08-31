@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: uk-power-daily
+    env: node
+    plan: starter
+    region: frankfurt   # or oregon/virginia/etc.
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "18"
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: N8N_WEBHOOK_SECRET
+        sync: false
