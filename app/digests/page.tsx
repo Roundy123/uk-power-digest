@@ -58,6 +58,7 @@ async function getData() {
     return [];
   }
   let rows: any[] = data || [];
+  // I couldn't get the Supabase create client to work on render.
   if (!rows || rows.length === 0) {
     try {
       const restUrl = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/digests?select=id,title,summary,published_at&order=published_at.desc&limit=5`;
