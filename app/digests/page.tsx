@@ -15,7 +15,6 @@ export default async function Page() {
   return (
     <main>
       <h2>Digests</h2>
-      data {JSON.stringify(rows)}
       <ul>
         {rows.map(r => (
           <li key={r.id}>
